@@ -9,7 +9,12 @@ import (
 type JSONB map[string]any
 
 func (j *JSONB) Scan(value interface{}) error {
+	if j == nil {
+		j = &JSONB{}
+	}
+
 	if value == nil {
+		*j = JSONB{}
 		return nil
 	}
 

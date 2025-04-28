@@ -40,6 +40,30 @@ func TestSQLScan(t *testing.T) {
 	assert.Equal(t, sample["foo"], res["foo"])
 }
 
+func TestSQLScanNull(t *testing.T) {
+	db, cleanup := go_test.InitDockerPostgresSQLDBTest(t)
+	defer cleanup()
+
+	const migration = `
+	CREATE TABLE test (
+		id SERIAL PRIMARY KEY,
+		data JSONB NULL
+	);
+
+	INSERT INTO test (data) VALUES (NULL)
+	`
+
+	_, err := db.Exec(migration)
+	assert.Nil(t, err)
+
+	var res gopsql.JSONB
+
+	err = db.QueryRow("SELECT data FROM test").Scan(&res)
+	assert.Nil(t, err)
+
+	assert.Equal(t, nil, res["foo"])
+}
+
 func TestSQLExec(t *testing.T) {
 	db, cleanup := go_test.InitDockerPostgresSQLDBTest(t)
 	defer cleanup()
@@ -66,4 +90,34 @@ func TestSQLExec(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, result, "bar")
+}
+
+func TestSQLExecNull(t *testing.T) {
+	db, cleanup := go_test.InitDockerPostgresSQLDBTest(t)
+	defer cleanup()
+
+	const migration = `
+	CREATE TABLE test (
+		id SERIAL PRIMARY KEY,
+		data JSONB NULL
+	);`
+
+	_, err := db.Exec(migration)
+	assert.Nil(t, err)
+
+	var sample gopsql.JSONB
+
+	_, err = db.Exec("INSERT INTO test (data) VALUES ($1)", sample)
+	assert.Nil(t, err)
+
+	var res gopsql.JSONB
+
+	err = db.QueryRow("SELECT data FROM test").Scan(&res)
+	assert.Nil(t, err)
+
+	t.Log(res)
+
+	assert.Equal(t, map[string]any{}, map[string]any(res))
+
+	res["foo"] = 2
 }
